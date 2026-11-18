@@ -1,0 +1,10 @@
+Video to Live Photo
+Copyright 2026 杨振
+
+This product includes software originally developed by 杨振.
+Redistributions must retain this NOTICE where required by the Apache License 2.0.
+
+Apple metadata support adapted from LiveCanvas, revision
+168e1461059105d091ba0df666703c63ccbaaa5c. The vendored Apple metadata
+and ISO BMFF modules are licensed under Apache-2.0.
+https://github.com/pengchujin/livecanvas/tree/168e1461059105d091ba0df666703c63ccbaaa5c/livecanvas/scripts/portable_live_photo
