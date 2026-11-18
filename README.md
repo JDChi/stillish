@@ -1,35 +1,37 @@
-<h1 align="center">照样动 · Stillish</h1>
+<h1 align="center">Stillish</h1>
 
-<p align="center"><strong>把一段 MP4 变成手机相册能播放的实况照片。</strong></p>
+<p align="center"><a href="README.zh-CN.md">简体中文</a></p>
+
+<p align="center"><strong>Turn MP4 videos into motion photos you can play in your phone's gallery.</strong></p>
 
 <p align="center">
-  Apple 芯片 Mac 命令行工具 · 本地转换 · Apple Live Photo 与 Android Motion Photo
+  Local CLI for Apple silicon Macs · Apple Live Photos and Android Motion Photos
 </p>
 
-Stillish 从视频里选一帧当封面，把短片和封面做成一张实况照片。用它可以把录屏、动画或日常视频带进手机相册，有声视频会保留声音。
+Stillish turns screen recordings, animations, and everyday clips into moving photos. It picks a cover frame and keeps the first audio track when present.
 
-## 下载并转换
+## Download and convert
 
-在 Apple 芯片 Mac 上下载 `stillish`。打开终端并进入下载目录，把 `demo.mp4` 换成你的视频路径。 [下载 Stillish](https://github.com/JDChi/stillish/releases/latest/download/stillish)
+Download `stillish` on an Apple silicon Mac. Open Terminal in your downloads folder and replace `demo.mp4` with the path to your video. [Download Stillish](https://github.com/JDChi/stillish/releases/latest/download/stillish)
 
 ```sh
 chmod +x stillish
 ./stillish demo.mp4
 ```
 
-| 想在哪儿看 | 怎么转换 | 得到什么 |
+| Where to open it | Command | Result |
 | --- | --- | --- |
-| Apple「照片」 | `./stillish demo.mp4` | `demo.pvt`，拖入 Mac「照片」导入，再通过 AirDrop 或 iCloud 照片传到 iPhone |
-| 兼容 Motion Photo 的 Android 相册 | `./stillish demo.mp4 --target android` | `demoMP.jpg`，原样传到手机后在相册打开 |
+| Apple Photos | `./stillish demo.mp4` | `demo.pvt`. Import it into Photos on your Mac, then use AirDrop or iCloud Photos to get it onto your iPhone. |
+| Android gallery with Motion Photo support | `./stillish demo.mp4 --target android` | `demoMP.jpg`. Transfer the file as-is and open it in your gallery. |
 
-**默认用中间帧当封面，保留原片时长和第一条音轨。** 也可以截取片段，再挑一帧当封面。
+By default, Stillish keeps the full video and uses its middle frame as the cover. You can also trim the clip and choose a cover frame.
 
 ```sh
 ./stillish demo.mp4 --start 2 --duration 3 --cover 1 --out ./out
 ```
 
-上面的命令从原片第 2 秒开始截取 3 秒，并用片段内第 1 秒的画面当封面。默认输出到当前目录，已有同名成品时会提示。完整参数见 `./stillish --help`。
+This takes a 3-second clip starting 2 seconds into the video and uses the frame 1 second into the clip as the cover. Files go to your current folder by default. Stillish warns you if a file with the same name already exists. Run `./stillish --help` for all options.
 
-> **通过微信传输**时，把 `.pvt` 或 `MP.jpg` 压成 ZIP，当文件发送。手机上用文件管理器解压，再从相册打开 Android 成品。Apple 的 `.pvt` 可在 Mac 解压后导入「照片」。
+> **Sharing via WeChat.** Put the `.pvt` or `MP.jpg` in a ZIP archive and send it as a file. On Android, unzip it in the file manager and open the photo in your gallery. For Apple Photos, unzip the package on your Mac and import it into Photos.
 
-转换在本机完成。首次转换时，如果电脑和工具缓存都缺少 FFmpeg，Stillish 会自动下载所需工具（约 33 MB）。
+Videos are processed on your Mac. If FFmpeg is missing, Stillish downloads it on the first conversion (about 33 MB).
