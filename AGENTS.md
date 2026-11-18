@@ -44,4 +44,4 @@ git tag vX.Y.Z
 git push origin refs/tags/vX.Y.Z
 ~~~
 
-[发布工作流](.github/workflows/release.yml)验证后会把 `stillish` 和 `SHA256SUMS.txt` 上传到对应的 GitHub Release。下载这两个文件到同一目录，运行 `shasum -a 256 -c SHA256SUMS.txt`。
+[发布工作流](.github/workflows/release.yml)验证后会把 `stillish-macos-arm64` 和 `SHA256SUMS.txt` 上传到对应的 GitHub Release。下载这两个文件到同一目录，运行 `shasum -a 256 -c SHA256SUMS.txt`。
