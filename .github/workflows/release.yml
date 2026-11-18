@@ -66,12 +66,17 @@ jobs:
           trap 'rm -rf "$smoke_dir"' EXIT
           ffmpeg -v error -f lavfi -i 'testsrc2=s=180x240:r=30' -t 1 \
             -c:v libx264 "$smoke_dir/demo.mp4"
-          dist/stillish "$smoke_dir/demo.mp4" --out "$smoke_dir"
-          dist/stillish "$smoke_dir/demo.mp4" --target android --out "$smoke_dir"
-          test -s "$smoke_dir/demo.pvt/demo.jpg"
-          test -s "$smoke_dir/demo.pvt/demo.mov"
-          test -s "$smoke_dir/demo.pvt/metadata.plist"
-          test -s "$smoke_dir/demoMP.jpg"
+          ffmpeg -v error -f lavfi -i 'testsrc2=s=180x240:r=10' -t 1 \
+            -loop 0 "$smoke_dir/animation.gif"
+          for input in demo.mp4 animation.gif; do
+            stem="${input%.*}"
+            dist/stillish "$smoke_dir/$input" --out "$smoke_dir"
+            dist/stillish "$smoke_dir/$input" --target android --out "$smoke_dir"
+            test -s "$smoke_dir/$stem.pvt/$stem.jpg"
+            test -s "$smoke_dir/$stem.pvt/$stem.mov"
+            test -s "$smoke_dir/$stem.pvt/metadata.plist"
+            test -s "$smoke_dir/${stem}MP.jpg"
+          done
 
       - name: Write the SHA-256 checksum
         working-directory: dist

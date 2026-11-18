@@ -13,6 +13,7 @@ from .formats import write_android, write_apple
 
 
 _FPS = 30
+_GIF_INPUT_OPTIONS = ("-f", "gif", "-ignore_loop", "1", "-min_delay", "1")
 
 
 def _seconds(value: str) -> float:
@@ -33,9 +34,10 @@ def _run(*args: str | Path) -> str:
     return result.stdout
 
 
-def _probe(tools: MediaTools, filename: Path) -> dict:
+def _probe(tools: MediaTools, filename: Path, *input_options: str) -> dict:
     return json.loads(_run(
-        tools.ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json", filename,
+        tools.ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json",
+        *input_options, filename,
     ))
 
 
@@ -58,10 +60,13 @@ def _source_duration(info: dict, video: dict) -> float:
 def _prepare(
     source: Path, temp: Path, tools: MediaTools, options: argparse.Namespace
 ) -> tuple[Path, Path, int, int]:
-    info = _probe(tools, source)
-    if "mp4" not in info.get("format", {}).get("format_name", "").split(","):
+    is_gif = source.suffix.lower() == ".gif"
+    info = _probe(tools, source, *(_GIF_INPUT_OPTIONS if is_gif else ()))
+    if not is_gif and "mp4" not in info.get("format", {}).get("format_name", "").split(","):
         raise StillishError("请输入有效的 MP4 文件。")
     video = _video(info)
+    if is_gif and video.get("nb_frames") == "1":
+        raise StillishError("请选择包含多帧的 GIF 动图。")
     available = _source_duration(info, video) - options.start
     if available <= 0:
         raise StillishError("截取起点超出视频范围。")
@@ -71,13 +76,26 @@ def _prepare(
     if options.cover is not None and options.cover >= duration:
         raise StillishError("封面时间须位于截取片段内。")
 
+    filters = r"scale=max(2\,round(iw*sar/2)*2):max(2\,round(ih/2)*2),setsar=1"
+    if is_gif:
+        input_options = (*_GIF_INPUT_OPTIONS, "-trans_color", "0xffffffff")
+        clip_options = ()
+        # Resample before trimming so a cut can begin inside a GIF frame's hold.
+        filters += (
+            f",fps={_FPS}:start_time=0,"
+            f"trim=start={options.start:.9f}:duration={duration:.9f},setpts=PTS-STARTPTS"
+        )
+    else:
+        input_options = ("-ss", f"{options.start:.9f}")
+        clip_options = ("-t", f"{duration:.9f}")
+
     movie = temp / "video.mp4"
     _run(
         tools.ffmpeg, "-v", "error", "-nostdin", "-xerror",
-        "-ss", f"{options.start:.9f}", "-i", source, "-t", f"{duration:.9f}",
+        *input_options, "-i", source, *clip_options,
         "-map", f"0:{video['index']}", "-map", "0:a:0?",
         "-map_metadata", "-1", "-map_chapters", "-1",
-        "-vf", r"scale=max(2\,round(iw*sar/2)*2):max(2\,round(ih/2)*2),setsar=1",
+        "-vf", filters,
         "-r", str(_FPS), "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart", movie,
@@ -124,8 +142,8 @@ def _publish(staged: Path, destination: Path) -> None:
 
 def _convert(options: argparse.Namespace) -> Path:
     source = options.input.expanduser().absolute()
-    if source.suffix.lower() != ".mp4" or not source.is_file():
-        raise StillishError("请输入一个存在的 .mp4 文件。")
+    if source.suffix.lower() not in {".mp4", ".gif"} or not source.is_file():
+        raise StillishError("请输入一个存在的 .mp4 或 .gif 文件。")
     directory = options.out.expanduser().resolve()
     name = f"{source.stem}MP.jpg" if options.target == "android" else f"{source.stem}.pvt"
     destination = directory / name
@@ -155,8 +173,8 @@ def _convert(options: argparse.Namespace) -> Path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="stillish", description="照样动 · 将 MP4 转成实况照片")
-    parser.add_argument("input", type=Path, help="输入 MP4 文件")
+    parser = argparse.ArgumentParser(prog="stillish", description="照样动 · 将 MP4 或 GIF 转成实况照片")
+    parser.add_argument("input", type=Path, help="输入 MP4 或 GIF 动图文件")
     parser.add_argument("--target", choices=("apple", "android"), default="apple", help="输出格式，默认 apple")
     parser.add_argument("--out", type=Path, default=Path.cwd(), metavar="目录", help="输出目录，默认当前目录")
     parser.add_argument("--start", type=_seconds, default=0.0, metavar="秒", help="截取起点，默认 0")

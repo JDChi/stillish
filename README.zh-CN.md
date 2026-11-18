@@ -2,21 +2,22 @@
 
 <p align="center"><a href="README.md">English</a></p>
 
-<p align="center"><strong>把一段 MP4 变成手机相册能播放的实况照片。</strong></p>
+<p align="center"><strong>把 MP4 视频和 GIF 动图变成手机相册能播放的实况照片。</strong></p>
 
 <p align="center">
   Apple 芯片 Mac 命令行工具 · 本地转换 · Apple Live Photo 与 Android Motion Photo
 </p>
 
-Stillish 从视频里选一帧当封面，把短片和封面做成一张实况照片。用它可以把录屏、动画或日常视频带进手机相册，有声视频会保留声音。
+Stillish 从视频里选一帧当封面，把短片和封面做成一张实况照片。用它可以把录屏、动图或日常视频带进手机相册，有声 MP4 会保留第一条音轨。
 
 ## 下载并转换
 
-在 Apple 芯片 Mac 上下载 `stillish`。打开终端并进入下载目录，把 `demo.mp4` 换成你的视频路径。 [下载 Stillish](https://github.com/JDChi/stillish/releases/latest/download/stillish)
+在 Apple 芯片 Mac 上下载 `stillish`。打开终端并进入下载目录，把示例中的文件名换成你的 MP4 或 GIF 路径。 [下载 Stillish](https://github.com/JDChi/stillish/releases/latest/download/stillish)
 
 ```sh
 chmod +x stillish
 ./stillish demo.mp4
+./stillish animation.gif
 ```
 
 | 想在哪儿看 | 怎么转换 | 得到什么 |
@@ -24,7 +25,7 @@ chmod +x stillish
 | Apple「照片」 | `./stillish demo.mp4` | `demo.pvt`，拖入 Mac「照片」导入，再通过 AirDrop 或 iCloud 照片传到 iPhone |
 | 兼容 Motion Photo 的 Android 相册 | `./stillish demo.mp4 --target android` | `demoMP.jpg`，原样传到手机后在相册打开 |
 
-**默认用中间帧当封面，保留原片时长和第一条音轨。** 也可以截取片段，再挑一帧当封面。
+**默认用中间帧当封面，转换整段 MP4 或一轮 GIF。** GIF 成品无声，透明区域填白。也可以截取片段，再挑一帧当封面。
 
 ```sh
 ./stillish demo.mp4 --start 2 --duration 3 --cover 1 --out ./out

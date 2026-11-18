@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import patch
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from stillish import dependencies
 from stillish.apple.metadata import inspect_live_jpeg, inspect_live_mov
@@ -39,12 +39,22 @@ class ConversionTests(unittest.TestCase):
             args.extend(["-t", str(seconds), "-c:v", "libx264", str(cls.base / f"{name}.mp4")])
             subprocess.run(args, check=True)
 
+        frames = []
+        for color in ("red", "lime", "blue"):
+            frame = Image.new("RGBA", (180, 240))
+            ImageDraw.Draw(frame).rectangle((30, 40, 149, 199), fill=color)
+            frames.append(frame)
+        frames[0].save(cls.base / "variable.GIF", save_all=True, append_images=frames[1:],
+                       duration=[400, 900, 200], disposal=2, loop=0)
+        frames[0].save(cls.base / "static.gif", duration=400)
+
     def run_cli(self, source, *args):
         return subprocess.run(
             [sys.executable, str(ROOT / "run_stillish.py"), str(self.base / source),
              "--out", str(self.base / self._testMethodName), *args],
             capture_output=True,
             text=True,
+            timeout=30,
             env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
         )
 
@@ -120,6 +130,54 @@ class ConversionTests(unittest.TestCase):
                         self.check_apple(path, name, duration, duration / 2, audio)
                     else:
                         self.check_android(path, duration, duration / 2, audio)
+
+    def gif_frame_colors(self, video):
+        # Sample the first RGB pixel of a 2x2 crop in each frame's colored center.
+        pixels = subprocess.check_output(
+            ["ffmpeg", "-v", "error", "-i", str(video), "-vf", "crop=2:2:90:120",
+             "-pix_fmt", "rgb24", "-f", "rawvideo", "-"],
+        )
+        return [
+            max(range(3), key=pixels[offset:offset + 3].__getitem__)
+            for offset in range(0, len(pixels), 12)
+        ]
+
+    def test_gif_preserves_one_cycle_and_transparency_for_both_targets(self):
+        for target in ("apple", "android"):
+            with self.subTest(target=target):
+                args = ("--target", "android") if target == "android" else ()
+                result = self.run_cli("variable.GIF", *args)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                path = Path(result.stdout.strip())
+                if target == "apple":
+                    self.assertEqual(path.name, "variable.pvt")
+                    self.check_apple(path, "variable", 1.5, 22 / 30, False)
+                    photo, video = path / "variable.jpg", path / "variable.mov"
+                else:
+                    self.assertEqual(path.name, "variableMP.jpg")
+                    self.check_android(path, 1.5, 22 / 30, False)
+                    photo, video = path, path.with_suffix(".mp4")
+                self.assertEqual(self.gif_frame_colors(video), [0] * 12 + [1] * 27 + [2] * 6)
+                with Image.open(photo) as image:
+                    self.assertTrue(all(value >= 250 for value in image.getpixel((0, 0))))
+                    red, green, blue = image.getpixel((90, 120))
+                    self.assertGreater(green, max(red, blue))
+
+    def test_gif_trim_can_start_inside_frame_hold(self):
+        result = self.run_cli("variable.GIF", "--start", "0.6", "--duration", "0.3", "--cover", "0.1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        path = Path(result.stdout.strip())
+        self.check_apple(path, "variable", 0.3, 0.1, False)
+        self.assertEqual(self.gif_frame_colors(path / "variable.mov"), [1] * 9)
+
+    def test_gif_rejects_static_and_corrupt_inputs(self):
+        (self.base / "broken.gif").write_bytes(b"not a GIF")
+        static = self.run_cli("static.gif")
+        self.assertNotEqual(static.returncode, 0)
+        self.assertIn("包含多帧的 GIF 动图", static.stderr)
+        corrupt = self.run_cli("broken.gif")
+        self.assertNotEqual(corrupt.returncode, 0)
+        self.assertEqual(set((self.base / self._testMethodName).iterdir()), set())
 
     def test_trim_and_cover(self):
         result = self.run_cli("voiced.mp4", "--start", "2", "--duration", "3", "--cover", "0.8")
