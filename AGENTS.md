@@ -33,4 +33,15 @@ xcrun clang -fobjc-arc -fblocks -framework AppKit -framework Photos \
 build/verify-apple /path/to/demo.pvt/demo.jpg /path/to/demo.pvt/demo.mov
 ~~~
 
-使用 3 秒无声和 10 秒有声两档样片验证封面时刻、时长及音轨。完成实际设备验证时，在 README 中记录系统、客户端版本和实测结果。开发与验收结束后再按最终实现更新这些文档。成品及用户样片留在本机 `dist/`。
+使用 3 秒无声和 10 秒有声两档样片验证封面时刻、时长及音轨。完成实际设备验证时，在 [技术说明](docs/TECHNICAL.md)中记录系统、客户端版本和实测结果。开发与验收结束后再按最终实现更新这些文档。成品及用户样片留在本机 `dist/`。
+
+## 发布新版本
+
+在 `pyproject.toml` 中更新版本并将提交合入 `main`。切到该提交，创建并推送与项目版本匹配的标签，将命令中的 `vX.Y.Z` 替换为实际标签。
+
+~~~sh
+git tag vX.Y.Z
+git push origin refs/tags/vX.Y.Z
+~~~
+
+[发布工作流](.github/workflows/release.yml)验证后会把 `stillish` 和 `SHA256SUMS.txt` 上传到对应的 GitHub Release。下载这两个文件到同一目录，运行 `shasum -a 256 -c SHA256SUMS.txt`。
