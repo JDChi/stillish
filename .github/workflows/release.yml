@@ -1,0 +1,90 @@
+name: Release Stillish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  release:
+    if: ${{ !github.event.deleted }}
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Validate version tag
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import tomllib
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag) is None:
+              raise SystemExit(f"Expected a vMAJOR.MINOR.PATCH tag, got {tag!r}")
+
+          with open("pyproject.toml", "rb") as project:
+              version = tomllib.load(project)["project"]["version"]
+          if tag != f"v{version}":
+              raise SystemExit(f"Tag {tag!r} does not match project version {version!r}")
+          PY
+
+      - name: Prepare build and test dependencies
+        run: |
+          if ! command -v ffmpeg || ! command -v ffprobe; then
+            brew install ffmpeg
+          fi
+          ffmpeg -version
+          ffprobe -version
+          python -m pip install '.[build]'
+
+      - name: Run tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+      - name: Build the standalone CLI
+        run: sh scripts/build-macos.sh
+
+      - name: Verify the packaged CLI
+        run: |
+          test "$(lipo -archs dist/stillish)" = arm64
+          dist/stillish --help
+
+          smoke_dir="$(mktemp -d)"
+          trap 'rm -rf "$smoke_dir"' EXIT
+          ffmpeg -v error -f lavfi -i 'testsrc2=s=180x240:r=30' -t 1 \
+            -c:v libx264 "$smoke_dir/demo.mp4"
+          dist/stillish "$smoke_dir/demo.mp4" --out "$smoke_dir"
+          dist/stillish "$smoke_dir/demo.mp4" --target android --out "$smoke_dir"
+          test -s "$smoke_dir/demo.pvt/demo.jpg"
+          test -s "$smoke_dir/demo.pvt/demo.mov"
+          test -s "$smoke_dir/demo.pvt/metadata.plist"
+          test -s "$smoke_dir/demoMP.jpg"
+
+      - name: Write the SHA-256 checksum
+        working-directory: dist
+        run: shasum -a 256 stillish > SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::A release already exists for $GITHUB_REF_NAME."
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --verify-tag --generate-notes --title "Stillish $GITHUB_REF_NAME" \
+            dist/stillish dist/SHA256SUMS.txt
