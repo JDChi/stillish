@@ -12,7 +12,7 @@ Stillish 从视频里选一帧当封面，把短片和封面做成一张实况�
 
 ## 下载并转换
 
-从发布页下载 Apple 芯片版，保存为 `stillish`。打开终端并进入下载目录，把示例中的文件名换成你的 MP4 或 GIF 路径。 [下载 Stillish](https://github.com/JDChi/stillish/releases/latest)
+从发布页下载 Apple 芯片版单文件程序，保存为 `stillish`。打开终端并进入下载目录，把示例中的文件名换成你的 MP4 或 GIF 路径。 [下载 Stillish](https://github.com/JDChi/stillish/releases/latest)
 
 ```sh
 chmod +x stillish

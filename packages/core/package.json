@@ -1,0 +1,10 @@
+{
+  "name": "@stillish/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./licenses/Apache-2.0.txt": "./licenses/Apache-2.0.txt",
+    "./licenses/NOTICE.txt": "./licenses/NOTICE.txt"
+  }
+}

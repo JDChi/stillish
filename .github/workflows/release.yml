@@ -21,26 +21,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v7
+      - uses: oven-sh/setup-bun@v2
         with:
-          python-version: '3.12'
+          bun-version: '1.4.4'
 
       - name: Validate version tag
         run: |
-          python - <<'PY'
-          import os
-          import re
-          import tomllib
-
-          tag = os.environ["GITHUB_REF_NAME"]
-          if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag) is None:
-              raise SystemExit(f"Expected a vMAJOR.MINOR.PATCH tag, got {tag!r}")
-
-          with open("pyproject.toml", "rb") as project:
-              version = tomllib.load(project)["project"]["version"]
-          if tag != f"v{version}":
-              raise SystemExit(f"Tag {tag!r} does not match project version {version!r}")
-          PY
+          bun -e '
+            const tag = process.env.GITHUB_REF_NAME;
+            const version = (await Bun.file("package.json").json()).version;
+            if (!/^v[0-9]+\.[0-9]+\.[0-9]+$/.test(tag ?? "") || tag !== "v" + version) {
+              console.error("Expected a version tag matching package.json, got " + tag + " for " + version);
+              process.exit(1);
+            }
+          '
 
       - name: Prepare build and test dependencies
         run: |
@@ -49,39 +43,28 @@ jobs:
           fi
           ffmpeg -version
           ffprobe -version
-          python -m pip install '.[build]'
+          bun install --frozen-lockfile
 
-      - name: Run tests
-        run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: Verify source and browser-target core
+        run: |
+          bun run check
+          bun run test:browser
+          bun test packages/core apps/cli/tests/dependencies.test.ts
 
       - name: Build the standalone CLI
-        run: sh scripts/build-macos.sh
+        run: bun run build:cli
 
       - name: Verify the packaged CLI
         run: |
-          test "$(lipo -archs dist/stillish)" = arm64
-          dist/stillish --help
-
-          smoke_dir="$(mktemp -d)"
-          trap 'rm -rf "$smoke_dir"' EXIT
-          ffmpeg -v error -f lavfi -i 'testsrc2=s=180x240:r=30' -t 1 \
-            -c:v libx264 "$smoke_dir/demo.mp4"
-          ffmpeg -v error -f lavfi -i 'testsrc2=s=180x240:r=10' -t 1 \
-            -loop 0 "$smoke_dir/animation.gif"
-          for input in demo.mp4 animation.gif; do
-            stem="${input%.*}"
-            dist/stillish "$smoke_dir/$input" --out "$smoke_dir"
-            dist/stillish "$smoke_dir/$input" --target android --out "$smoke_dir"
-            test -s "$smoke_dir/$stem.pvt/$stem.jpg"
-            test -s "$smoke_dir/$stem.pvt/$stem.mov"
-            test -s "$smoke_dir/$stem.pvt/metadata.plist"
-            test -s "$smoke_dir/${stem}MP.jpg"
-          done
+          test "$(lipo -archs apps/cli/dist/stillish)" = arm64
+          apps/cli/dist/stillish --help
+          apps/cli/dist/stillish --license
+          STILLISH_TEST_BINARY=apps/cli/dist/stillish bun test apps/cli/tests/cli.test.ts
 
       - name: Prepare release files
-        working-directory: dist
+        working-directory: apps/cli/dist
         run: |
-          mv stillish stillish-macos-arm64
+          cp -p stillish stillish-macos-arm64
           shasum -a 256 stillish-macos-arm64 > SHA256SUMS.txt
 
       - name: Publish GitHub Release
@@ -94,4 +77,4 @@ jobs:
           fi
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --verify-tag --generate-notes --title "Stillish $GITHUB_REF_NAME" \
-            dist/stillish-macos-arm64 dist/SHA256SUMS.txt
+            apps/cli/dist/stillish-macos-arm64 apps/cli/dist/SHA256SUMS.txt

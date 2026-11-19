@@ -12,7 +12,7 @@ Stillish turns screen recordings, animations, and everyday clips into moving pho
 
 ## Download and convert
 
-Download the Apple silicon build from the release page and save it as `stillish`. Open Terminal in your downloads folder and replace the example filenames with the path to your MP4 or animated GIF. [Download Stillish](https://github.com/JDChi/stillish/releases/latest)
+Download the standalone Apple silicon build from the release page and save it as `stillish`. Open Terminal in your downloads folder and replace the example filenames with the path to your MP4 or animated GIF. [Download Stillish](https://github.com/JDChi/stillish/releases/latest)
 
 ```sh
 chmod +x stillish

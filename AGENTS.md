@@ -1,47 +1,50 @@
 # AGENTS.md
 
-照样动 · Stillish 是把 MP4 和 GIF 转为实况照片的本地 CLI。面向用户的说明见 [README.md](README.md)。首份发行物是 Apple 芯片 Mac 的单个可执行文件。
+照样动 · Stillish 是把 MP4 和 GIF 转为实况照片的本地 CLI。面向用户的说明见 [README.md](README.md)。发行物是 Apple 芯片 Mac 的单个可执行文件。
 
 ## 修改约定
 
-- `src/stillish/cli.py` 负责参数、共享 FFmpeg 转换和输出事务。`formats.py` 负责 Apple 与 Android 封装。`dependencies.py` 负责外部工具检测、下载校验和缓存。
+- [CLI](apps/cli/) 负责命令行参数、本地文件、FFmpeg 进程和依赖下载。[公共库](packages/core/) 负责转换参数、封面计算和封装，使用普通 TypeScript 和字节数据，供 CLI 和未来的浏览器入口共用。
 - MP4 和 GIF 默认输出 Apple Live Photo。Android 通过 `--target android` 指定。成功时在标准输出仅打印成品路径，诊断和进度写入标准错误。
 - 源文件保持只读。使用输出目录下的临时目录生成资源，完成后再发布成品，并防止覆盖同名文件。
-- Apple 的 JPEG MakerNote、MOV 内容标识和定时元数据轨必须一致，时间指向实际封面帧。先重封装再写元数据，后续普通转码会丢掉定时轨。保留 `src/stillish/licenses/` 中的第三方许可和署名。
+- Apple 的 JPEG MakerNote、MOV 内容标识和定时元数据轨必须一致，时间指向实际封面帧。先重封装再写元数据，后续普通转码会丢掉定时轨。保留 [第三方许可和署名](packages/core/licenses/)，通过 `stillish --license` 随单文件交付。
 - Android JPEG 保留 JFIF APP0，将 Motion Photo XMP 写入 APP1。XMP 记录实际视频长度和封面时间，完整 MP4 放在 JPEG 结束标记后。
 - 更新下载源时同时更新版本和 SHA-256，复验系统工具优先、首次补齐、下载失败清理和缓存离线运行。分开记录格式校验、相册导入播放和小红书发布预览。
 
 ## 构建与验收
 
-在 Apple 芯片 Mac 上使用 Python 3.12，测试机的 `PATH` 需要提供 FFmpeg 和 ffprobe。
+在 Apple 芯片 Mac 上使用根目录 `package.json` 指定的 Bun 版本。测试机的 `PATH` 需要提供 FFmpeg 和 ffprobe。
 
 ~~~sh
-python3.12 -m venv .venv
-. .venv/bin/activate
-python -m pip install -e '.[build]'
-PYTHONPATH=src python -m unittest discover -s tests -v
-sh -n scripts/build-macos.sh
-./scripts/build-macos.sh
+bun install --frozen-lockfile
+bun run check
+bun run test
+bun run test:browser
+sh -n apps/cli/scripts/build-macos.sh
+bun run build:cli
+STILLISH_TEST_BINARY=apps/cli/dist/stillish bun test apps/cli/tests/cli.test.ts
 ~~~
 
-打包后从 `dist/stillish` 验证真实入口。需要复验 Apple 配对资源时，可用 Xcode 命令行工具构建不写入图库的测试程序：
+公共库测试覆盖两种格式的字节结构，并用浏览器目标打包后在只提供 Web API 的环境中运行。验证真实依赖归档的空缓存安装和离线复用时，将 `STILLISH_TEST_FFMPEG_ARCHIVE` 指向已下载的固定版本归档后运行测试。
+
+需要复验 Apple 配对资源时，用 Xcode 命令行工具构建不写入图库的测试程序。
 
 ~~~sh
-mkdir -p build
+mkdir -p apps/cli/dist
 xcrun clang -fobjc-arc -fblocks -framework AppKit -framework Photos \
-  tests/verify_apple.m -o build/verify-apple
-build/verify-apple /path/to/demo.pvt/demo.jpg /path/to/demo.pvt/demo.mov
+  apps/cli/tests/verify_apple.m -o apps/cli/dist/verify-apple
+apps/cli/dist/verify-apple /path/to/demo.pvt/demo.jpg /path/to/demo.pvt/demo.mov
 ~~~
 
-使用 3 秒无声和 10 秒有声两档样片验证封面时刻、时长及音轨。用不等帧时长的 GIF 验证循环、截取和透明区域。完成实际设备验证时，在 [技术说明](docs/TECHNICAL.md)中记录系统、客户端版本和实测结果。开发与验收结束后再按最终实现更新这些文档。成品及用户样片留在本机 `dist/`。
+用 3 秒无声和 10 秒有声的 MP4、不等帧时长的 GIF 验证封面、时长、音轨、循环和透明区域。实际设备验收记录在 [技术说明](docs/TECHNICAL.md)。构建产物写入 `apps/cli/dist/`，用户样片留在本机。
 
 ## 发布新版本
 
-在 `pyproject.toml` 中更新版本并将提交合入 `main`。切到该提交，创建并推送与项目版本匹配的标签，将命令中的 `vX.Y.Z` 替换为实际标签。
+在根目录 `package.json` 中更新版本并将提交合入 `main`。切到该提交，创建并推送与项目版本匹配的标签，将命令中的 `vX.Y.Z` 替换为实际标签。
 
 ~~~sh
 git tag vX.Y.Z
 git push origin refs/tags/vX.Y.Z
 ~~~
 
-[发布工作流](.github/workflows/release.yml)验证后会把 `stillish-macos-arm64` 和 `SHA256SUMS.txt` 上传到对应的 GitHub Release。下载这两个文件到同一目录，运行 `shasum -a 256 -c SHA256SUMS.txt`。
+[发布工作流](.github/workflows/release.yml)验证后会从 `apps/cli/dist/` 上传 `stillish-macos-arm64` 和 `SHA256SUMS.txt`。下载这两个文件到同一目录，运行 `shasum -a 256 -c SHA256SUMS.txt`。

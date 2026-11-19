@@ -1,0 +1,8 @@
+{
+  "name": "@stillish/cli",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@stillish/core": "workspace:*"
+  }
+}

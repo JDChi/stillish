@@ -1,0 +1,18 @@
+{
+  "name": "stillish",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Turn MP4 videos and GIFs into Apple Live Photos and Android Motion Photos locally from your terminal.",
+  "packageManager": "bun@1.4.4",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build:cli": "sh apps/cli/scripts/build-macos.sh",
+    "check": "tsc -p packages/core && tsc -p apps/cli",
+    "test": "bun test",
+    "test:browser": "bun packages/core/scripts/check-browser.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "typescript": "5.9.3"
+  }
+}
