@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="在浏览器里把 MP4 或 GIF 转成 Apple 实况照片或 Android 动态照片。">
+    <meta name="theme-color" content="#f8f6ef">
+    <title>照样动 · Stillish</title>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="照样动首页">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>Stillish <span class="brand-cn">照样动</span></span>
+        </a>
+        <span class="privacy"><span class="privacy-dot" aria-hidden="true"></span>文件仅在本机处理</span>
+      </header>
+      <main>
+        <section class="intro" aria-labelledby="title">
+          <h1 id="title">让画面<span>再动一下。</span></h1>
+          <p>把一段视频或 GIF 变成实况照片。</p>
+        </section>
+        <figure class="artwork" aria-hidden="true">
+          <div class="photo">
+            <img src="./src/windsock.webp" alt="" width="900" height="600">
+          </div>
+        </figure>
+        <section class="converter" aria-labelledby="converter-title">
+          <header class="converter-heading">
+            <h2 id="converter-title">转换实况照片</h2>
+            <p>选择一个 MP4 或动态 GIF。</p>
+          </header>
+          <input id="file-input" type="file" accept=".mp4,.gif,video/mp4,image/gif" hidden>
+          <button id="choose" class="drop-zone" type="button">
+            <span class="file-icon" aria-hidden="true"></span>
+            <span id="preview" class="file-preview" aria-hidden="true" hidden>
+              <canvas id="thumbnail"></canvas>
+            </span>
+            <span class="file-text">
+              <span id="file-label">选择文件</span>
+              <span id="file-detail" class="file-detail">也可以拖到这里</span>
+            </span>
+          </button>
+          <div class="output-info">
+            <span>输出格式</span>
+            <strong id="format"></strong>
+          </div>
+          <div id="message" class="message" hidden><span id="message-text" role="status" aria-atomic="true"></span><span id="engine-percent" hidden></span></div>
+          <div id="progress-row" class="progress-row" hidden>
+            <progress id="task-progress" max="100" value="0" aria-label="进度"></progress>
+            <span id="task-percent" aria-hidden="true">0%</span>
+          </div>
+          <div class="actions">
+            <button id="convert" class="primary" type="button" disabled>开始转换</button>
+            <button id="cancel" class="secondary" type="button" hidden>取消</button>
+            <a id="download" class="primary" hidden>下载实况照片</a>
+          </div>
+          <p id="download-help" class="download-help" hidden></p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

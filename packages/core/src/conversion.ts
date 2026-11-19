@@ -30,7 +30,7 @@ function videoStream(info: ProbeResult): StreamInfo {
   return video;
 }
 
-function sourceDuration(info: ProbeResult, video: StreamInfo): number {
+export function sourceDuration(info: ProbeResult, video = videoStream(info)): number {
   for (const value of [video.duration, info.format?.duration]) {
     const duration = Number(value);
     if (Number.isFinite(duration) && duration > 0) return duration;
@@ -88,10 +88,14 @@ export function selectCover(info: ProbeResult, cover?: number): ApplePhotoTiming
   return { frame, frameCount, fps: FPS, width: video.width, height: video.height };
 }
 
-export function coverArgs(movie: string, frame: number, cover: string): string[] {
+export function coverArgs(movie: string, frame: number, cover: string, encoding: "jpeg" | "rgba" = "jpeg"): string[] {
+  const input = encoding === "rgba" ? ["-threads", "1", "-filter_threads", "1"] : [];
+  const output = encoding === "rgba"
+    ? ["-c:v", "rawvideo", "-threads", "1", "-an", "-pix_fmt", "rgba", "-f", "rawvideo"]
+    : ["-c:v", "mjpeg", "-q:v", "2"];
   return [
-    "-v", "error", "-nostdin", "-i", movie, "-vf", "select=eq(n\\," + frame + ")",
-    "-frames:v", "1", "-c:v", "mjpeg", "-q:v", "2", cover,
+    "-v", "error", "-nostdin", ...input, "-i", movie, "-vf", "select=eq(n\\," + frame + ")",
+    "-frames:v", "1", ...output, cover,
   ];
 }
 

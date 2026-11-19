@@ -2,37 +2,43 @@
 
 <p align="center"><a href="README.md">English</a></p>
 
-<p align="center"><strong>把 MP4 视频和 GIF 动图变成手机相册能播放的实况照片。</strong></p>
+<p align="center"><strong>把 MP4 视频和 GIF 动图变成 Apple 实况照片或 Android 动态照片。</strong></p>
 
-<p align="center">
-  Apple 芯片 Mac 命令行工具 · 本地转换 · Apple Live Photo 与 Android Motion Photo
-</p>
+<p align="center">用浏览器或命令行转换，素材留在本机。</p>
 
-Stillish 从视频里选一帧当封面，把短片和封面做成一张实况照片。用它可以把录屏、动图或日常视频带进手机相册，有声 MP4 会保留第一条音轨。
+## 在浏览器里转换
 
-## 下载并转换
+![照样动网页界面，显示已选 MP4 的缩略图和 Apple 实况照片输出格式](docs/images/stillish-web.webp)
 
-从发布页下载 Apple 芯片版单文件程序，保存为 `stillish`。打开终端并进入下载目录，把示例中的文件名换成你的 MP4 或 GIF 路径。 [下载 Stillish](https://github.com/JDChi/stillish/releases/latest)
+1. 在本地打开网页版。 [运行网页版](docs/TECHNICAL.md#本地运行)
+2. 选择一个 MP4 或 GIF 动图。浏览器能解码时，页面会显示一张缩略图。
+3. 点击「开始转换」，查看进度，完成后下载实况照片。首次转换会按需加载引擎。
+
+Stillish 会根据设备自动选择下载格式。
+
+| 设备 | 下载文件 | 打开方式 |
+| --- | --- | --- |
+| Mac、iPhone 或 iPad | `clip.pvt.zip` | 解压得到 `.pvt`，在 Mac 的「照片」中导入。 |
+| Android、Windows 或其他设备 | `clipMP.jpg` | 在支持 Android Motion Photo 的相册中播放。 |
+
+默认转换整段 MP4 或一轮 GIF，用中间帧当封面。有声 MP4 保留第一条音轨。GIF 成品无声，透明区域填白。
+
+## 在 Mac 上用命令行转换
+
+下载 Apple 芯片版单文件程序，保存为 `stillish`。在终端中，把示例文件名换成你的 MP4 或 GIF 路径。 [下载 CLI](https://github.com/JDChi/stillish/releases/latest)
 
 ```sh
 chmod +x stillish
-./stillish demo.mp4
-./stillish animation.gif
+./stillish clip.mp4
+./stillish animation.gif --target android
 ```
 
-| 想在哪儿看 | 怎么转换 | 得到什么 |
-| --- | --- | --- |
-| Apple「照片」 | `./stillish demo.mp4` | `demo.pvt`，拖入 Mac「照片」导入，再通过 AirDrop 或 iCloud 照片传到 iPhone |
-| 兼容 Motion Photo 的 Android 相册 | `./stillish demo.mp4 --target android` | `demoMP.jpg`，原样传到手机后在相册打开 |
-
-**默认用中间帧当封面，转换整段 MP4 或一轮 GIF。** GIF 成品无声，透明区域填白。也可以截取片段，再挑一帧当封面。
+默认生成 Apple `.pvt`。加 `--target android` 生成 `MP.jpg`。命令行还可以截取片段和指定封面。
 
 ```sh
-./stillish demo.mp4 --start 2 --duration 3 --cover 1 --out ./out
+./stillish clip.mp4 --start 2 --duration 3 --cover 1 --out ./out
 ```
 
-上面的命令从原片第 2 秒开始截取 3 秒，并用片段内第 1 秒的画面当封面。默认输出到当前目录，已有同名成品时会提示。完整参数见 `./stillish --help`。
+这条命令从原片第 2 秒开始截取 3 秒，并用片段内第 1 秒的画面做封面。完整参数见 `./stillish --help`。
 
-> **通过微信传输**时，把 `.pvt` 或 `MP.jpg` 压成 ZIP，当文件发送。手机上用文件管理器解压，再从相册打开 Android 成品。Apple 的 `.pvt` 可在 Mac 解压后导入「照片」。
-
-转换在本机完成。首次转换时，如果电脑和工具缓存都缺少 FFmpeg，Stillish 会自动下载所需工具（约 33 MB）。
+**通过微信传输。** 网页版生成的 Apple ZIP 可以直接当文件发送。命令行生成的 `.pvt` 或动态照片 JPG，可以先压成 ZIP 再当文件发送，以保留实况内容。

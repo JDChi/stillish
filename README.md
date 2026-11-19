@@ -2,37 +2,43 @@
 
 <p align="center"><a href="README.zh-CN.md">简体中文</a></p>
 
-<p align="center"><strong>Turn MP4 videos and GIFs into motion photos you can play in your phone's gallery.</strong></p>
+<p align="center"><strong>Turn MP4 videos and animated GIFs into Apple Live Photos and Android Motion Photos.</strong></p>
 
-<p align="center">
-  Local CLI for Apple silicon Macs · Apple Live Photos and Android Motion Photos
-</p>
+<p align="center">In your browser or from the command line. Your media stays on your device.</p>
 
-Stillish turns screen recordings, animations, and everyday clips into moving photos. It picks a cover frame and keeps the first audio track from MP4 videos when present.
+## Convert in your browser
 
-## Download and convert
+![Stillish web converter showing the thumbnail of a selected MP4 and the Apple Live Photo download format](docs/images/stillish-web.webp)
 
-Download the standalone Apple silicon build from the release page and save it as `stillish`. Open Terminal in your downloads folder and replace the example filenames with the path to your MP4 or animated GIF. [Download Stillish](https://github.com/JDChi/stillish/releases/latest)
+1. Open the web app locally. [Run the web app](docs/TECHNICAL.md#本地运行)
+2. Choose an MP4 or animated GIF. Stillish shows a thumbnail when your browser can decode a preview.
+3. Select **开始转换** (Convert), follow the progress, then download your motion photo. The first conversion loads the engine if needed.
+
+Stillish picks the download format for your device.
+
+| Device | Download | How to open it |
+| --- | --- | --- |
+| Mac, iPhone, or iPad | `clip.pvt.zip` | Unzip it and import the `.pvt` package into Photos on a Mac. |
+| Android, Windows, or other devices | `clipMP.jpg` | Use a gallery that supports Android Motion Photo to play it. |
+
+Stillish converts the full MP4 or one loop of a GIF and uses the middle frame as the cover. It keeps the first MP4 audio track when present. GIFs are silent, with transparent areas filled in white.
+
+## Use the macOS CLI
+
+Download the standalone Apple silicon build and save it as `stillish`. In Terminal, replace the example filename with your MP4 or GIF. [Download the CLI](https://github.com/JDChi/stillish/releases/latest)
 
 ```sh
 chmod +x stillish
-./stillish demo.mp4
-./stillish animation.gif
+./stillish clip.mp4
+./stillish animation.gif --target android
 ```
 
-| Where to open it | Command | Result |
-| --- | --- | --- |
-| Apple Photos | `./stillish demo.mp4` | `demo.pvt`. Import it into Photos on your Mac, then use AirDrop or iCloud Photos to get it onto your iPhone. |
-| Android gallery with Motion Photo support | `./stillish demo.mp4 --target android` | `demoMP.jpg`. Transfer the file as-is and open it in your gallery. |
-
-By default, Stillish converts the full MP4 or one cycle of a GIF and uses the middle frame as the cover. GIF conversions are silent and use white for transparent areas. You can also trim the clip and choose a cover frame.
+The default output is an Apple `.pvt` package. Add `--target android` for an `MP.jpg`. You can also trim a clip and pick a cover frame.
 
 ```sh
-./stillish demo.mp4 --start 2 --duration 3 --cover 1 --out ./out
+./stillish clip.mp4 --start 2 --duration 3 --cover 1 --out ./out
 ```
 
-This takes a 3-second clip starting 2 seconds into the video and uses the frame 1 second into the clip as the cover. Files go to your current folder by default. Stillish warns you if a file with the same name already exists. Run `./stillish --help` for all options.
+This takes three seconds starting at the two-second mark and sets the cover one second into that clip. See `./stillish --help` for all options.
 
-> **Sharing via WeChat.** Put the `.pvt` or `MP.jpg` in a ZIP archive and send it as a file. On Android, unzip it in the file manager and open the photo in your gallery. For Apple Photos, unzip the package on your Mac and import it into Photos.
-
-Conversions run on your Mac. If FFmpeg is missing, Stillish downloads it on the first conversion (about 33 MB).
+**Sharing via WeChat.** Send the Apple web ZIP as a file. For a CLI `.pvt` package or a Motion Photo JPG, put the original in a ZIP and send the ZIP as a file to preserve the motion.

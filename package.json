@@ -6,8 +6,10 @@
   "packageManager": "bun@1.4.4",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
+    "dev:web": "bun --filter @stillish/web dev",
+    "build:web": "bun --filter @stillish/web build",
     "build:cli": "sh apps/cli/scripts/build-macos.sh",
-    "check": "tsc -p packages/core && tsc -p apps/cli",
+    "check": "tsc -p packages/core && tsc -p apps/cli && tsc -p apps/web",
     "test": "bun test",
     "test:browser": "bun packages/core/scripts/check-browser.ts"
   },

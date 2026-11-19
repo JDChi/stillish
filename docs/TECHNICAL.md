@@ -1,6 +1,6 @@
 # 照样动 · Stillish 技术说明
 
-Stillish 是一个把 MP4 和 GIF 转为实况照片的本地 CLI。单文件 CLI 运行在 Apple 芯片 Mac，可为 Apple「照片」生成 `.pvt`，也可为兼容 Google Motion Photo 1.0 的 Android 相册生成 `MP.jpg`。Android 指的是**输出格式**，运行转换命令的设备仍是 Mac。
+Stillish 提供网页版和本地 CLI，把 MP4 和 GIF 转为实况照片。单文件 CLI 运行在 Apple 芯片 Mac，可为 Apple「照片」生成 `.pvt`，也可为兼容 Google Motion Photo 1.0 的 Android 相册生成 `MP.jpg`。
 
 ## 转换链路
 
@@ -48,10 +48,51 @@ Stillish 保留 JPEG 的 JFIF APP0，在 APP1 写入 Motion Photo XMP。元数�
 - Bun 用 `build --compile` 将 TypeScript CLI 和运行时打包为 `apps/cli/dist/stillish`。媒体工具优先从 `PATH` 查找，其次使用 `~/Library/Caches/stillish/`。Apple 芯片 Mac 首次缺依赖时下载固定版本的 FFmpeg 和 ffprobe，比较 SHA-256 并检查所需编码器。 [构建脚本](../apps/cli/scripts/build-macos.sh) · [依赖检测实现](../apps/cli/src/dependencies.ts) · [Bun 单文件说明](https://bun.sh/docs/compiler/executables) · [依赖发行包和校验值](https://github.com/vanloctech/ffmpeg-macos/releases/expanded_assets/ffmpeg-2026.06.11)
 - 微信传输时，将整个 `.pvt` 包目录或原始 `MP.jpg` 压缩成 ZIP，当文件发送。接收方先解压，再用相册导入或查看。ZIP 保留包目录和 JPEG 尾部的 MP4。图片通道若重写 JPEG，可能只留下封面。仅凭聊天预览无法确定手机收到的文件是否被重写。 [Android 格式的读取要求](https://developer.android.com/media/platform/motion-photo-format)
 
+## Web
+
+网页版与 CLI 共用转换参数、封面计算和实况照片封装。浏览器端转换、进度和封装的设计见 [网页版技术说明](../apps/web/TECHNICAL.md)。
+
+### 本地运行
+
+从仓库根目录启动开发预览。
+
+```sh
+bun install --frozen-lockfile
+bun run dev:web
+```
+
+验收生产构建时，用 Wrangler 提供静态产物。
+
+```sh
+bun run build:web
+wrangler pages dev apps/web/dist
+```
+
+### Cloudflare Pages
+
+构建输出为 `apps/web/dist/`。Pages 提供网页静态资源，约 31 MiB 的 FFmpeg 引擎由 CDN 下载，以适应 Pages 的 25 MiB 单文件限制。Vite 在输出的 `licenses/` 中附带依赖许可和公共库署名。 [Pages 本地预览](https://developers.cloudflare.com/pages/functions/local-development/) · [Pages 文件大小限制](https://developers.cloudflare.com/pages/platform/limits/#file-size)
+
+完成本地验收后，可以把同一目录上传到已创建的 Direct Upload 类型项目，将命令里的项目名换成实际名称。 [Pages 直接上传](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+
+```sh
+wrangler pages deploy apps/web/dist --project-name YOUR_PROJECT_NAME
+```
+
+### 网页验收
+
+```sh
+bun run check
+bun test apps/web/tests packages/core
+bun run test:browser
+```
+
+在实际浏览器用合成 MP4 和 GIF 检查缩略图、首次加载、连续转换、进度区稳定性、取消、失败重试和两种下载。用网络面板确认素材与成品没有上传请求。格式验收核对 Apple 配对标识和封面时刻，以及 Android XMP 和内嵌 MP4 边界。相册导入与播放用真机验证。
+
 ## 验证记录
 
 | 检查 | 已获得的结果 |
 | --- | --- |
+| 网页本地预览 | Wrangler 静态构建已通过 Chrome、WebKit 转换和下载验证。桌面 Safari 实际完成转换并显示下载入口。测试覆盖 MP4 音轨、动态 GIF、平台判断、引擎下载进度、失败重试和取消。5.08 秒 GIF 的两种下载均保留 152 帧、约 5.067 秒，封面对应 2.533 秒。下载的 Apple 配对资源经 PhotoKit 读取成功。手机相册导入待真机验证。 |
 | TypeScript 迁移 | Apple 芯片 Mac 上的 Bun 单文件通过 14 项测试。公共库的浏览器目标打包通过 Web API 沙箱和 Chrome 封装测试。用户 GIF 的两种成品均与 Python v0.2.0 的时长和封面时刻一致。 |
 | Python v0.2.0 对照 | MP4 样片覆盖时长、音轨、封面、Apple 配对和 Android XMP。合成 GIF 覆盖单轮帧时序、透明区域填白、从帧停留区间截取、单帧和损坏文件。 |
 | GIF 样片 | 61 帧 GIF 单轮 5.08 秒。ARM64 单文件生成的两种成品均为 152 帧、5.067 秒，封面与 2.533 秒处的视频帧一致。Apple 成品经 PhotoKit 加载成功，Android 成品的 XMP、内嵌视频和解码通过本机校验。 |
